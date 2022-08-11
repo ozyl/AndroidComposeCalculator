@@ -3,10 +3,15 @@ package cn.okzyl.studyjamscompose
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.*
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
+import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,8 +21,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.okzyl.studyjamscompose.ui.theme.*
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import java.math.BigDecimal
 
 class MainActivity : ComponentActivity() {
@@ -73,18 +76,14 @@ fun Calculator() {
             contentAlignment = Alignment.BottomEnd
         ) {
             Column(modifier = Modifier
-                .verticalScroll(scrollState),
+                .verticalScroll(scrollState, reverseScrolling = true),
                 horizontalAlignment = Alignment.End) {
                 Text(text = calculateState.target,
                     color = Color.White,
-                    fontSize = 100.sp,
-                    onTextLayout = {
-                    })
+                    fontSize = 100.sp)
                 Text(text = calculateState.result.toString(),
                     color = Color.White,
-                    fontSize = 100.sp,
-                    onTextLayout = {
-                    })
+                    fontSize = 100.sp)
             }
         }
         Column(Modifier.fillMaxWidth()) {
@@ -98,9 +97,6 @@ fun Calculator() {
                             text = it,
                             color = buttonColors[oneIndex][twoIndex]) {
                             calculateState = calculateState.onInput(it)
-                            coroutineScope.launch {
-                                scrollState.scrollTo(scrollState.maxValue)
-                            }
                         }
                     }
                 }
