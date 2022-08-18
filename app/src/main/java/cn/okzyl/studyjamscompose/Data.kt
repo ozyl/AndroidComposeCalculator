@@ -6,6 +6,8 @@ import androidx.compose.ui.graphics.Color
 import cn.okzyl.studyjamscompose.ui.theme.Orange
 import java.math.BigDecimal
 
+val operAllow = mutableListOf(ButtonType.SYMBOL,ButtonType.CALCULATE)
+val allow = mutableListOf(ButtonType.NUMBER,ButtonType.DELETE,ButtonType.PERCENT,ButtonType.CALCULATE)
 val buttons = mutableStateListOf(
     mutableStateListOf(
         ButtonModel("C", type = ButtonType.EMPTY),
@@ -59,6 +61,7 @@ data class CalculateState(
 ){
     val isEmpty get() = list.isEmpty() || (list.size==1 && list.first().text=="0")
     val isLastOperator get() =  isOperator(list.last().text)
+    val editing get() = list.firstOrNull { it.editing }!=null
 }
 
 data class CalculateUnit(

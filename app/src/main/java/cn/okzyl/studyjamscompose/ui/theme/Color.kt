@@ -11,6 +11,7 @@ val Teal200 = Color(0xFF03DAC5)
 
 val Background = Color.White
 val FontColor = Color.Black
+val Complete = Color.Blue
 val UnconfirmedFontColor = Color.Gray.copy(alpha = 0.2f)
 val Orange = Color(0xFFFF6B3B)
 val DarkGray = Color(0xff414141)

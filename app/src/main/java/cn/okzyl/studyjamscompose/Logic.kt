@@ -36,6 +36,13 @@ fun CalculateState.onInput(buttonModel: ButtonModel): CalculateState? {
             list.add(CalculateUnit.from(buttonModel.text))
         }
         ButtonType.CALCULATE -> {
+            if (editing){
+                list.mapInPlace { it.copy(editing = false) }
+                buttons.forEach {
+                    it.mapInPlace { it.copy(enable = true) }
+                }
+                return null
+            }
             return copy(result=true to "未实现")
         }
         ButtonType.PERCENT -> {

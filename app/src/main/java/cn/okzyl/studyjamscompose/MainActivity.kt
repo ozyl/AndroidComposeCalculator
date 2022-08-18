@@ -1,6 +1,5 @@
 package cn.okzyl.studyjamscompose
 
-import android.graphics.Typeface
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -14,29 +13,27 @@ import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.ClickableText
-import androidx.compose.material.*
+import androidx.compose.material.LocalTextStyle
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
+import androidx.compose.material.Text
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.SubcomposeLayout
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFontLoader
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.*
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.*
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import cn.okzyl.studyjamscompose.ui.theme.*
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -78,11 +75,13 @@ fun Calculator() {
         ) {
             InputShow(calculateState)
         }
-        Box(Modifier
-            .height(1.dp)
-            .fillMaxWidth()
-            .padding(horizontal = 13.dp)
-            .background(Color(0xfff5f5f5)))
+        Box(
+            Modifier
+                .height(1.dp)
+                .fillMaxWidth()
+                .padding(horizontal = 13.dp)
+                .background(Color(0xfff5f5f5))
+        )
         Column(
             Modifier
                 .fillMaxWidth()
@@ -143,11 +142,12 @@ private fun InputShow(calculateState: CalculateState) {
                         if (oldValue.editing || oldIndex == annotation.tag.toInt()) {
                             iterator.set(oldValue.copy(editing = annotation.tag.toInt() == oldIndex))
                         }
-//                        buttons.forEach {
-//                            it.forEach {
-//                                it.copy(enable = )
-//                            }
-//                        }
+                        val allowType = if (isOperator(annotation.item)) operAllow else allow
+                        buttons.forEach {
+                            it.mapInPlace {
+                                it.copy(enable = allowType.contains(it.type))
+                            }
+                        }
                     }
                 }
             }
@@ -189,7 +189,8 @@ private fun AutoSizeString(
         var fontSize = maxSize
         val calculateIntrinsics = @Composable {
             val testString = buildString(fontSize)
-            testString to MultiParagraphIntrinsics(testString, LocalTextStyle.current,
+            testString to MultiParagraphIntrinsics(
+                testString, LocalTextStyle.current,
                 density = LocalDensity.current,
                 resourceLoader = LocalFontLoader.current,
                 placeholders = emptyList()
@@ -239,6 +240,7 @@ fun CalculatorButton(
     val scope = rememberCoroutineScope()
     suspend fun PointerInputScope.pointerInput() {
         detectTapGestures(onPress = {
+            if (!buttonModel.enable)return@detectTapGestures
             down = true
             context.vibrator(0L to 30L, amplitude = 50)
 
@@ -278,7 +280,7 @@ fun CalculatorButton(
     Box(
         modifier
             .indication(interactionSource, rememberRipple(radius = 30.dp))
-            .pointerInput(Unit, PointerInputScope::pointerInput),
+            .pointerInput(buttonModel, PointerInputScope::pointerInput),
         contentAlignment = Alignment.Center,
     ) {
         val sizeAnimate =
@@ -291,18 +293,29 @@ fun CalculatorButton(
                 .graphicsLayer(scaleX = sizeAnimate.value, scaleY = sizeAnimate.value)
                 .size(60.dp)
                 .clip(CircleShape)
-                .background(if (buttonModel.type == ButtonType.CALCULATE) Orange else Color.Unspecified),
+                .background(
+                    when (buttonModel.type) {
+                        ButtonType.CALCULATE -> (if(state.editing) Complete else Orange)
+                        else -> Color.Unspecified
+                    }
+                ),
             contentAlignment = Alignment.Center
         ) {
+            val alpha = if (buttonModel.enable) 1f else 0.4f
             if (buttonModel.res != null) {
                 Image(
-                    painter = painterResource(id = buttonModel.res),
+                    painter = painterResource(id =
+                    when {
+                        buttonModel.type == ButtonType.CALCULATE && state.editing ->  R.drawable.ic_complete
+                        else -> buttonModel.res
+                    }),
                     contentDescription = null,
                     Modifier
-                        .size(35.dp)
+                        .size(35.dp),
+                    alpha = alpha
                 )
             } else {
-                Text(text = buttonModel.text, fontSize = 30.sp, color = buttonModel.type.color)
+                Text(text = buttonModel.text, fontSize = 30.sp, color = buttonModel.type.color.copy(alpha))
             }
         }
     }
