@@ -1,6 +1,8 @@
 package cn.okzyl.studyjamscompose
 
+import android.graphics.Typeface
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.animateFloatAsState
@@ -12,32 +14,30 @@ import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.ClickableText
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFontLoader
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.*
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import cn.okzyl.studyjamscompose.ui.theme.Background
-import cn.okzyl.studyjamscompose.ui.theme.Orange
-import cn.okzyl.studyjamscompose.ui.theme.StudyJamsComposeTheme
-import cn.okzyl.studyjamscompose.ui.theme.selectColor
+import androidx.compose.ui.unit.*
+import cn.okzyl.studyjamscompose.ui.theme.*
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -66,17 +66,23 @@ fun Calculator() {
     }
     Column(
         Modifier
-            .background(Background), verticalArrangement = Arrangement.Bottom
+            .background(Background)
+            .padding(bottom = 30.dp), verticalArrangement = Arrangement.Bottom
     ) {
         Box(
             Modifier
                 .fillMaxWidth()
-                .background(Color.Black)
-                .weight(1f),
+                .weight(1f)
+                .padding(start = 15.dp, end = 15.dp, bottom = 15.dp),
             contentAlignment = Alignment.BottomEnd
         ) {
             InputShow(calculateState)
         }
+        Box(Modifier
+            .height(1.dp)
+            .fillMaxWidth()
+            .padding(horizontal = 13.dp)
+            .background(Color(0xfff5f5f5)))
         Column(
             Modifier
                 .fillMaxWidth()
@@ -89,7 +95,7 @@ fun Calculator() {
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight(),
-                            it
+                            it, calculateState
                         ) {
                             calculateState.onInput(it)?.run {
                                 calculateState = this
@@ -102,6 +108,9 @@ fun Calculator() {
     }
 }
 
+const val MAX_SIZE = 50
+const val MIN_SIZE = 30
+
 @Composable
 private fun InputShow(calculateState: CalculateState) {
     Column(
@@ -109,14 +118,13 @@ private fun InputShow(calculateState: CalculateState) {
             .verticalScroll(rememberScrollState(), reverseScrolling = true),
         horizontalAlignment = Alignment.End
     ) {
-        val annotationText = buildAnnotatedString {
+        AutoSizeString(MAX_SIZE, MIN_SIZE, { size ->
             calculateState.list.forEachIndexed { index, it ->
                 pushStringAnnotation(tag = index.toString(), annotation = it.text)
                 withStyle(
                     style = SpanStyle(
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 30.sp,
+                        color = FontColor,
+                        fontSize = size.sp,
                         background = if (it.editing) selectColor else Color.Unspecified
                     )
                 ) {
@@ -124,55 +132,129 @@ private fun InputShow(calculateState: CalculateState) {
                 }
                 pop()
             }
-        }
-        ClickableText(text = annotationText) {
-            val annotationList = annotationText.getStringAnnotations(it, it)
-            annotationList.firstOrNull()?.let { annotation ->
-                val iterator = calculateState.list.listIterator()
-                while (iterator.hasNext()) {
-                    val oldIndex = iterator.nextIndex()
-                    val oldValue = iterator.next()
-                    if (oldValue.editing || oldIndex == annotation.tag.toInt()) {
-                        iterator.set(oldValue.copy(editing = annotation.tag.toInt() == oldIndex))
+        }) { realString ->
+            ClickableText(text = realString) {
+                val annotationList = realString.getStringAnnotations(it, it)
+                annotationList.firstOrNull()?.let { annotation ->
+                    val iterator = calculateState.list.listIterator()
+                    while (iterator.hasNext()) {
+                        val oldIndex = iterator.nextIndex()
+                        val oldValue = iterator.next()
+                        if (oldValue.editing || oldIndex == annotation.tag.toInt()) {
+                            iterator.set(oldValue.copy(editing = annotation.tag.toInt() == oldIndex))
+                        }
+//                        buttons.forEach {
+//                            it.forEach {
+//                                it.copy(enable = )
+//                            }
+//                        }
                     }
                 }
             }
         }
-        Text(
-            text = calculateState.result.toString(),
-            color = Color.White,
-            fontSize = 100.sp
-        )
+
+        if (calculateState.result != null && !calculateState.isEmpty) {
+            AutoSizeString(MAX_SIZE, 0, { size ->
+                withStyle(
+                    style = SpanStyle(
+                        color = FontColor,
+                        fontSize = size.sp,
+                    )
+                ) {
+                    append("= " + calculateState.result.second)
+                }
+            }) {
+                Text(
+                    text = it,
+                    style = TextStyle(
+                        color = if (calculateState.result.first) FontColor else UnconfirmedFontColor
+                    ),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AutoSizeString(
+    maxSize: Int,
+    minSize: Int,
+    buildString: AnnotatedString.Builder.(size: Int) -> Unit,
+    content: @Composable (AnnotatedString) -> Unit,
+) {
+    fun buildString(size: Int) = buildAnnotatedString {
+        buildString.invoke(this, size)
+    }
+    BoxWithConstraints {
+        var fontSize = maxSize
+        val calculateIntrinsics = @Composable {
+            val testString = buildString(fontSize)
+            testString to MultiParagraphIntrinsics(testString, LocalTextStyle.current,
+                density = LocalDensity.current,
+                resourceLoader = LocalFontLoader.current,
+                placeholders = emptyList()
+            )
+        }
+        var result = calculateIntrinsics()
+        var firstOverflow: Int? = null
+        with(LocalDensity.current) {
+            var intrinsics = result.second
+            var currLength = result.first.length
+            firstOverflow?.run {
+                if (intrinsics.maxIntrinsicWidth <= maxWidth.toPx() && currLength <= this) {
+                    fontSize = maxSize
+                    firstOverflow = null
+                }
+            }
+            while (intrinsics.maxIntrinsicWidth > maxWidth.toPx()) {
+                intrinsics = result.second
+                currLength = result.first.length
+                if (firstOverflow == null) {
+                    firstOverflow = currLength - 1
+                }
+                fontSize = kotlin.math.max((fontSize * 0.98).toInt(), minSize)
+                Log.d("test", fontSize.toString())
+                if (fontSize == minSize) return@with
+                result = calculateIntrinsics()
+            }
+        }
+        val realString = buildString(fontSize)
+        content.invoke(realString)
     }
 }
 
 
 @Composable
-fun CalculatorButton(modifier: Modifier, buttonModel: ButtonModel, onClick: () -> Unit = {}) {
+fun CalculatorButton(
+    modifier: Modifier,
+    buttonModel: ButtonModel,
+    state: CalculateState,
+    onClick: () -> Unit = {},
+) {
     var down by remember {
         mutableStateOf(false)
     }
     val interactionSource = remember { MutableInteractionSource() }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    suspend fun PointerInputScope.pointerInput()  {
+    suspend fun PointerInputScope.pointerInput() {
         detectTapGestures(onPress = {
             down = true
-            context.vibrator(0L to 10L, amplitude = 50)
+            context.vibrator(0L to 30L, amplitude = 50)
 
 
             val notShowInteraction = buttonModel.type == ButtonType.CALCULATE
-            var press :PressInteraction.Press?=null
-            if (!notShowInteraction){
+            var press: PressInteraction.Press? = null
+            if (!notShowInteraction) {
                 press = PressInteraction.Press(it)
                 interactionSource.emit(press)
             }
-            var job:Job?=null
+            var job: Job? = null
             //Continuous delete
-            if (buttonModel.type == ButtonType.DELETE){
+            if (buttonModel.type == ButtonType.DELETE) {
                 var first = true
                 job = scope.launch {
-                    while (true){
+                    while (!state.isEmpty) {
                         delay(if (first) 500 else 70)
                         first = false
                         context.vibrator(0L to 10L, amplitude = 50)
@@ -187,7 +269,7 @@ fun CalculatorButton(modifier: Modifier, buttonModel: ButtonModel, onClick: () -
                 interactionSource.emit(PressInteraction.Release(this))
             }
 
-            if (result){
+            if (result) {
                 onClick.invoke()
             }
             down = false
@@ -195,8 +277,8 @@ fun CalculatorButton(modifier: Modifier, buttonModel: ButtonModel, onClick: () -
     }
     Box(
         modifier
-            .indication(interactionSource,rememberRipple(radius = 30.dp))
-            .pointerInput(Unit,PointerInputScope::pointerInput),
+            .indication(interactionSource, rememberRipple(radius = 30.dp))
+            .pointerInput(Unit, PointerInputScope::pointerInput),
         contentAlignment = Alignment.Center,
     ) {
         val sizeAnimate =
