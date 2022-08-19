@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalFoundationApi::class)
+
 package cn.okzyl.studyjamscompose
 
 import android.os.Bundle
@@ -7,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.LocalOverScrollConfiguration
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
@@ -73,13 +76,15 @@ fun Calculator() {
                 .padding(start = 15.dp, end = 15.dp, bottom = 15.dp),
             contentAlignment = Alignment.BottomEnd
         ) {
-            InputShow(calculateState)
+            CompositionLocalProvider(LocalOverScrollConfiguration provides null) {
+                InputShow(calculateState)
+            }
         }
         Box(
             Modifier
                 .height(1.dp)
                 .fillMaxWidth()
-                .padding(horizontal = 13.dp)
+                .padding(bottom = 13.dp)
                 .background(Color(0xfff5f5f5))
         )
         Column(
@@ -110,13 +115,21 @@ fun Calculator() {
 const val MAX_SIZE = 50
 const val MIN_SIZE = 30
 
+@ExperimentalFoundationApi
 @Composable
 private fun InputShow(calculateState: CalculateState) {
     Column(
         modifier = Modifier
+            .fillMaxWidth()
             .verticalScroll(rememberScrollState(), reverseScrolling = true),
         horizontalAlignment = Alignment.End
     ) {
+        calculateState.record.forEach {
+            Column(modifier = Modifier.padding(vertical = 20.dp), horizontalAlignment = Alignment.End){
+                Text(text = it.first,color= UnconfirmedFontColor, fontSize = 20.sp, modifier = Modifier.padding(bottom = 5.dp))
+                Text(text = "= "+it.second,color= UnconfirmedFontColor, fontSize = 20.sp)
+            }
+        }
         AutoSizeString(MAX_SIZE, MIN_SIZE, { size ->
             calculateState.list.forEachIndexed { index, it ->
                 pushStringAnnotation(tag = index.toString(), annotation = it.text)
@@ -154,24 +167,22 @@ private fun InputShow(calculateState: CalculateState) {
         }
 
         if (calculateState.result != null && !calculateState.isEmpty) {
-            AutoSizeString(MAX_SIZE, 0, { size ->
+            AutoSizeString(MIN_SIZE, 0, { size ->
                 withStyle(
                     style = SpanStyle(
-                        color = FontColor,
+                        color = UnconfirmedFontColor,
                         fontSize = size.sp,
                     )
                 ) {
-                    append("= " + calculateState.result.second)
+                    append("= " + calculateState.result)
                 }
             }) {
                 Text(
-                    text = it,
-                    style = TextStyle(
-                        color = if (calculateState.result.first) FontColor else UnconfirmedFontColor
-                    ),
+                    text = it
                 )
             }
         }
+        Spacer(modifier = Modifier.height(15.dp))
     }
 }
 
@@ -259,7 +270,7 @@ fun CalculatorButton(
                     while (!state.isEmpty) {
                         delay(if (first) 500 else 70)
                         first = false
-                        context.vibrator(0L to 10L, amplitude = 50)
+                        context.vibrator(0L to 30L, amplitude = 30)
                         onClick.invoke()
                     }
                 }
@@ -295,7 +306,7 @@ fun CalculatorButton(
                 .clip(CircleShape)
                 .background(
                     when (buttonModel.type) {
-                        ButtonType.CALCULATE -> (if(state.editing) Complete else Orange)
+                        ButtonType.CALCULATE -> (if (state.editing) Complete else Orange)
                         else -> Color.Unspecified
                     }
                 ),

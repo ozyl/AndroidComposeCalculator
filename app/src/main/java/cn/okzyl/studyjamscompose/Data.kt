@@ -4,7 +4,6 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.graphics.Color
 import cn.okzyl.studyjamscompose.ui.theme.Orange
-import java.math.BigDecimal
 
 val operAllow = mutableListOf(ButtonType.SYMBOL,ButtonType.CALCULATE)
 val allow = mutableListOf(ButtonType.NUMBER,ButtonType.DELETE,ButtonType.PERCENT,ButtonType.CALCULATE)
@@ -57,11 +56,14 @@ enum class ButtonType(val color: Color) {
 
 data class CalculateState(
     val list: SnapshotStateList<CalculateUnit> = mutableStateListOf<CalculateUnit>(CalculateUnit.from("0")),
-    val result: Pair<Boolean,String>?=null,
+    val result: String?=null,
+    val record: SnapshotStateList<Pair<String,String>> = mutableStateListOf()
 ){
     val isEmpty get() = list.isEmpty() || (list.size==1 && list.first().text=="0")
     val isLastOperator get() =  isOperator(list.last().text)
-    val editing get() = list.firstOrNull { it.editing }!=null
+    val editing get() = editIndex!=-1
+    val editIndex get() = list.indexOfFirst { it.editing }
+    val rawText get() = list.joinToString(separator = "") { it.text }
 }
 
 data class CalculateUnit(
