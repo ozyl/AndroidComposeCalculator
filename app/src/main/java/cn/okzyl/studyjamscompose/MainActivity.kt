@@ -1,8 +1,8 @@
 
 package cn.okzyl.studyjamscompose
 
+import android.content.res.Configuration
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.animateFloatAsState
@@ -21,22 +21,26 @@ import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.SaverScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalFontLoader
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.ViewCompat
 import cn.okzyl.studyjamscompose.ui.theme.*
+import com.google.gson.Gson
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -44,6 +48,9 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window?.run {
+            statusBarColor = Background.toArgb()
+        }
         setContent {
             StudyJamsComposeTheme {
                 // A surface container using the 'background' color from the theme
@@ -51,23 +58,39 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-                    Calculator()
+                    val calculateState = rememberSaveable(saver = object :Saver<MutableState<CalculateState>,String>{
+                        override fun restore(value: String): MutableState<CalculateState> {
+                            return mutableStateOf(Gson().fromJson(value,CalculateState::class.java))
+                        }
+
+                        override fun SaverScope.save(value: MutableState<CalculateState>): String? {
+                            return Gson().toJson(value.value)
+                        }
+
+
+                    })  {
+                        mutableStateOf(CalculateState())
+                    }
+                    val isOrientation = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+                    if (isOrientation) CalculatorOrientation(calculateState) else
+                    Calculator(calculateState)
                 }
             }
         }
     }
 }
 
+
 @Composable
-fun Calculator() {
-    var calculateState by remember {
-        mutableStateOf(CalculateState())
-    }
+fun Calculator(calculateState: MutableState<CalculateState>) {
+    ViewCompat.getWindowInsetsController(LocalView.current)?.isAppearanceLightStatusBars = true
 
     Column(
         Modifier
             .background(Background)
-            .padding(bottom = 30.dp), verticalArrangement = Arrangement.Bottom
+            .run {
+                    padding(bottom = 30.dp)
+            }, verticalArrangement = Arrangement.Bottom
     ) {
         Box(
             Modifier
@@ -76,8 +99,8 @@ fun Calculator() {
                 .padding(start = 15.dp, end = 15.dp),
             contentAlignment = Alignment.BottomEnd
         ) {
-            InputShow(calculateState) {
-                calculateState = it
+            InputShow(calculateState.value) {
+                calculateState.value = it
             }
         }
         Box(
@@ -89,7 +112,6 @@ fun Calculator() {
         )
         Column(
             Modifier
-                .fillMaxWidth()
                 .fillMaxHeight(0.5f)
         ) {
             buttons.forEachIndexed { oneIndex, it ->
@@ -99,10 +121,59 @@ fun Calculator() {
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight(),
-                            it, calculateState
+                            it, calculateState.value
                         ) {
-                            calculateState.onInput(it)?.run {
-                                calculateState = this
+                            calculateState.value.onInput(it)?.run {
+                                calculateState.value = this
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+fun CalculatorOrientation(calculateState: MutableState<CalculateState>) {
+
+    ViewCompat.getWindowInsetsController(LocalView.current)?.isAppearanceLightStatusBars = true
+
+    Row(
+        Modifier
+            .background(Background)
+            .run {
+                padding(bottom = (10).dp)
+            }, horizontalArrangement = Arrangement.End
+    ) {
+        Box(
+            Modifier
+                .fillMaxHeight()
+                .weight(1f)
+                .padding(start = 15.dp, end = 15.dp),
+            contentAlignment = Alignment.BottomEnd
+        ) {
+            InputShow(calculateState.value) {
+                calculateState.value = it
+            }
+        }
+        Column(
+            Modifier
+                .fillMaxHeight()
+                .fillMaxWidth(0.35f)
+        ) {
+            buttons.forEachIndexed { oneIndex, it ->
+                Row(Modifier.weight(1f)) {
+                    it.forEachIndexed { twoIndex, it ->
+                        CalculatorButton(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            it, calculateState.value
+                        ) {
+                            calculateState.value.onInput(it)?.run {
+                                calculateState.value = this
                             }
                         }
                     }
@@ -359,6 +430,9 @@ fun CalculatorButton(
 @Composable
 fun DefaultPreview() {
     StudyJamsComposeTheme {
-        Calculator()
+        val calculateState = remember {
+            mutableStateOf(CalculateState())
+        }
+        Calculator(calculateState)
     }
 }
