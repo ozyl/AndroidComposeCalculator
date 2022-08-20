@@ -1,4 +1,3 @@
-@file:OptIn(ExperimentalFoundationApi::class)
 
 package cn.okzyl.studyjamscompose
 
@@ -7,9 +6,9 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.LocalOverScrollConfiguration
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
@@ -64,6 +63,7 @@ fun Calculator() {
     var calculateState by remember {
         mutableStateOf(CalculateState())
     }
+
     Column(
         Modifier
             .background(Background)
@@ -73,18 +73,18 @@ fun Calculator() {
             Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .padding(start = 15.dp, end = 15.dp, bottom = 15.dp),
+                .padding(start = 15.dp, end = 15.dp),
             contentAlignment = Alignment.BottomEnd
         ) {
-            CompositionLocalProvider(LocalOverScrollConfiguration provides null) {
-                InputShow(calculateState)
+            InputShow(calculateState) {
+                calculateState = it
             }
         }
         Box(
             Modifier
                 .height(1.dp)
                 .fillMaxWidth()
-                .padding(bottom = 13.dp)
+                .padding(horizontal = 10.dp)
                 .background(Color(0xfff5f5f5))
         )
         Column(
@@ -113,11 +113,10 @@ fun Calculator() {
 }
 
 const val MAX_SIZE = 50
-const val MIN_SIZE = 30
+const val MIN_SIZE = 24
 
-@ExperimentalFoundationApi
 @Composable
-private fun InputShow(calculateState: CalculateState) {
+private fun InputShow(calculateState: CalculateState, update: (CalculateState) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -125,22 +124,45 @@ private fun InputShow(calculateState: CalculateState) {
         horizontalAlignment = Alignment.End
     ) {
         calculateState.record.forEach {
-            Column(modifier = Modifier.padding(vertical = 20.dp), horizontalAlignment = Alignment.End){
-                Text(text = it.first,color= UnconfirmedFontColor, fontSize = 20.sp, modifier = Modifier.padding(bottom = 5.dp))
-                Text(text = "= "+it.second,color= UnconfirmedFontColor, fontSize = 20.sp)
+            Column(
+                modifier = Modifier.padding(vertical = 20.dp),
+                horizontalAlignment = Alignment.End
+            ) {
+                Text(
+                    text = it.first.prettyNumber,
+                    color = UnconfirmedFontColor,
+                    fontSize = 20.sp,
+                    modifier = Modifier.padding(bottom = 5.dp)
+                )
+
+                Row(Modifier.horizontalScroll(rememberScrollState())) {
+                    Text(
+                        text = "= " + it.second.prettyNumber,
+                        color = UnconfirmedFontColor,
+                        fontSize = 20.sp
+                    )
+                }
             }
         }
-        AutoSizeString(MAX_SIZE, MIN_SIZE, { size ->
+
+
+        val isConfirm = calculateState.isConfirm
+        val inputSizeAnimate =
+            animateIntAsState(
+                targetValue = if (isConfirm) MIN_SIZE else MAX_SIZE,
+                animationSpec = tween(durationMillis = 100)
+            )
+        AutoSizeString(inputSizeAnimate.value, MIN_SIZE, { size ->
             calculateState.list.forEachIndexed { index, it ->
                 pushStringAnnotation(tag = index.toString(), annotation = it.text)
                 withStyle(
                     style = SpanStyle(
-                        color = FontColor,
+                        color = if (isConfirm) UnconfirmedFontColor else FontColor,
                         fontSize = size.sp,
                         background = if (it.editing) selectColor else Color.Unspecified
                     )
                 ) {
-                    append(it.text)
+                    append(it.text.prettyNumber)
                 }
                 pop()
             }
@@ -162,24 +184,32 @@ private fun InputShow(calculateState: CalculateState) {
                             }
                         }
                     }
+                    update.invoke(calculateState.copy(result = calculateState.result?.copy(false)))
                 }
             }
         }
 
         if (calculateState.result != null && !calculateState.isEmpty) {
-            AutoSizeString(MIN_SIZE, 0, { size ->
+            val resultSizeAnimate =
+                animateIntAsState(
+                    targetValue = if (isConfirm) MAX_SIZE else MIN_SIZE,
+                    animationSpec = tween(durationMillis = 300)
+                )
+            AutoSizeString(resultSizeAnimate.value, MIN_SIZE, { size ->
                 withStyle(
                     style = SpanStyle(
-                        color = UnconfirmedFontColor,
+                        color = if (isConfirm) FontColor else UnconfirmedFontColor,
                         fontSize = size.sp,
                     )
                 ) {
-                    append("= " + calculateState.result)
+                    append("= " + calculateState.result.second.prettyNumber)
                 }
             }) {
-                Text(
-                    text = it
-                )
+                Row(Modifier.horizontalScroll(rememberScrollState())) {
+                    Text(
+                        text = it
+                    )
+                }
             }
         }
         Spacer(modifier = Modifier.height(15.dp))
@@ -208,24 +238,11 @@ private fun AutoSizeString(
             )
         }
         var result = calculateIntrinsics()
-        var firstOverflow: Int? = null
         with(LocalDensity.current) {
             var intrinsics = result.second
-            var currLength = result.first.length
-            firstOverflow?.run {
-                if (intrinsics.maxIntrinsicWidth <= maxWidth.toPx() && currLength <= this) {
-                    fontSize = maxSize
-                    firstOverflow = null
-                }
-            }
             while (intrinsics.maxIntrinsicWidth > maxWidth.toPx()) {
                 intrinsics = result.second
-                currLength = result.first.length
-                if (firstOverflow == null) {
-                    firstOverflow = currLength - 1
-                }
                 fontSize = kotlin.math.max((fontSize * 0.98).toInt(), minSize)
-                Log.d("test", fontSize.toString())
                 if (fontSize == minSize) return@with
                 result = calculateIntrinsics()
             }
@@ -251,7 +268,7 @@ fun CalculatorButton(
     val scope = rememberCoroutineScope()
     suspend fun PointerInputScope.pointerInput() {
         detectTapGestures(onPress = {
-            if (!buttonModel.enable)return@detectTapGestures
+            if (!buttonModel.enable) return@detectTapGestures
             down = true
             context.vibrator(0L to 30L, amplitude = 50)
 
@@ -297,7 +314,7 @@ fun CalculatorButton(
         val sizeAnimate =
             animateFloatAsState(
                 targetValue = if (down) 0.85f else 1f,
-                animationSpec = tween(durationMillis = 50)
+                animationSpec = tween(durationMillis = 150)
             )
         Box(
             modifier = Modifier
@@ -315,18 +332,24 @@ fun CalculatorButton(
             val alpha = if (buttonModel.enable) 1f else 0.4f
             if (buttonModel.res != null) {
                 Image(
-                    painter = painterResource(id =
-                    when {
-                        buttonModel.type == ButtonType.CALCULATE && state.editing ->  R.drawable.ic_complete
-                        else -> buttonModel.res
-                    }),
+                    painter = painterResource(
+                        id =
+                        when {
+                            buttonModel.type == ButtonType.CALCULATE && state.editing -> R.drawable.ic_complete
+                            else -> buttonModel.res
+                        }
+                    ),
                     contentDescription = null,
                     Modifier
                         .size(35.dp),
                     alpha = alpha
                 )
             } else {
-                Text(text = buttonModel.text, fontSize = 30.sp, color = buttonModel.type.color.copy(alpha))
+                Text(
+                    text = buttonModel.text,
+                    fontSize = 30.sp,
+                    color = buttonModel.type.color.copy(alpha)
+                )
             }
         }
     }

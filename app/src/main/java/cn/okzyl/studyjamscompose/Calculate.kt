@@ -1,5 +1,6 @@
 package cn.okzyl.studyjamscompose
 
+import java.math.BigDecimal
 import java.util.*
 import kotlin.math.floor
 
@@ -12,8 +13,7 @@ object Calculate {
         val inOrderExp = getStringList(exp) //String转换为List,得到中缀表达式
         val postOrderExp = getPostOrder(inOrderExp)
         val res = calPostOrderExp(postOrderExp)
-        return if (res == floor(res)) res.toLong()
-            .toString() + "" else res.toString() + "" //当结果是整数的时候，输出不要加小数点
+        return res.stripTrailingZeros().toPlainString() //当结果是整数的时候，输出不要加小数点
     }
 
     //把数字和符号加入list
@@ -81,19 +81,19 @@ object Calculate {
 
     //计算一个后缀表达式
     @Throws(Exception::class)
-    private fun calPostOrderExp(postOrderExp: ArrayList<String>): Double {
+    private fun calPostOrderExp(postOrderExp: ArrayList<String>): BigDecimal {
         val stack: Stack<String> = Stack<String>()
         for (i in 0 until postOrderExp.size) {
             val curString = postOrderExp[i]
             if (isOper(curString)) {
-                val a: Double = stack.pop().toDouble()
-                val b: Double = stack.pop().toDouble()
-                var res = 0.0
+                val a: BigDecimal = stack.pop().toBigDecimal()
+                val b: BigDecimal = stack.pop().toBigDecimal()
+                var res = BigDecimal("0")
                 when (curString[0]) {
-                    '+' -> res = b + a
-                    '-' -> res = b - a
+                    '+' -> res = b+a
+                    '-' -> res = b-a
                     '/' -> {
-                        if (a == 0.0) throw Exception()
+                        if (a == BigDecimal.ZERO) throw Exception()
                         res = b / a
                     }
                     '*' -> res = b * a
@@ -103,7 +103,7 @@ object Calculate {
                 stack.push(curString)
             }
         }
-        return stack.pop().toDouble()
+        return stack.pop().toBigDecimal()
     }
 
 }

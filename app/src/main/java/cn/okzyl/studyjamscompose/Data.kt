@@ -9,7 +9,7 @@ val operAllow = mutableListOf(ButtonType.SYMBOL,ButtonType.CALCULATE)
 val allow = mutableListOf(ButtonType.NUMBER,ButtonType.DELETE,ButtonType.PERCENT,ButtonType.CALCULATE)
 val buttons = mutableStateListOf(
     mutableStateListOf(
-        ButtonModel("C", type = ButtonType.EMPTY),
+        ButtonModel("AC", type = ButtonType.EMPTY),
         ButtonModel(type = ButtonType.DELETE, res = R.drawable.ic_delete),
         ButtonModel("%", type = ButtonType.PERCENT),
         ButtonModel(res = R.drawable.ic_chufa, type = ButtonType.SYMBOL, text = "/")
@@ -56,7 +56,7 @@ enum class ButtonType(val color: Color) {
 
 data class CalculateState(
     val list: SnapshotStateList<CalculateUnit> = mutableStateListOf<CalculateUnit>(CalculateUnit.from("0")),
-    val result: String?=null,
+    val result: Pair<Boolean,String>?=null,
     val record: SnapshotStateList<Pair<String,String>> = mutableStateListOf()
 ){
     val isEmpty get() = list.isEmpty() || (list.size==1 && list.first().text=="0")
@@ -64,6 +64,7 @@ data class CalculateState(
     val editing get() = editIndex!=-1
     val editIndex get() = list.indexOfFirst { it.editing }
     val rawText get() = list.joinToString(separator = "") { it.text }
+    val isConfirm get() = result?.first == true
 }
 
 data class CalculateUnit(

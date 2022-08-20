@@ -4,14 +4,28 @@ import androidx.compose.runtime.mutableStateListOf
 import java.math.BigDecimal
 
 fun CalculateState.onInput(buttonModel: ButtonModel): CalculateState? {
-    fun calculate(): CalculateState? {
+    val backText = rawText
+    val backResult = result?.second ?: ""
+    fun calculate(): CalculateState {
+        buttons[0][0] = buttons[0][0].copy(
+            text =
+            if (!isEmpty) {
+                "C"
+            } else "AC"
+        )
         kotlin.runCatching {
-            return copy(result = Calculate.calculate(rawText))
+            if (isConfirm) {
+                record.add(backText to backResult)
+            }
+            return copy(result = false to Calculate.calculate(rawText))
         }
-        return null
+        return copy(result = result?.copy(false))
     }
     when (buttonModel.type) {
         ButtonType.DELETE -> {
+            if (isConfirm) {
+                return null
+            }
             if (isEmpty) {
                 return null
             }
@@ -34,9 +48,14 @@ fun CalculateState.onInput(buttonModel: ButtonModel): CalculateState? {
         }
         ButtonType.EMPTY -> {
             list.clear()
+            if (buttonModel.text=="AC") record.clear()
             list.add(CalculateUnit.from("0"))
         }
         ButtonType.SYMBOL -> {
+            if (isConfirm) {
+                list.clear()
+                list.add(CalculateUnit(result?.second ?: "0"))
+            }
             if (editing) {
                 val index = editIndex
                 list[index] = list[index].copy(text = buttonModel.text)
@@ -58,13 +77,23 @@ fun CalculateState.onInput(buttonModel: ButtonModel): CalculateState? {
                 }
                 return null
             }
-            record.add(rawText to (result?:"0"))
-            return copy(list = mutableStateListOf(CalculateUnit(result?:"0")), result = null)
+            if (isConfirm || isEmpty) return null
+            return copy(result = result?.copy(first = true))
         }
         ButtonType.PERCENT -> {
+
             val index =
-            if (editing) { editIndex
-            } else list.lastIndex
+                when {
+                    isConfirm -> {
+                        list.clear()
+                        list.add(CalculateUnit(result?.second ?: "0"))
+                        0
+                    }
+                    editing -> {
+                        editIndex
+                    }
+                    else -> list.lastIndex
+                }
             if (!isLastOperator) {
                 list[index].text.toBigDecimalOrNull()?.run {
                     list[index] = list[index].copy(
@@ -74,19 +103,24 @@ fun CalculateState.onInput(buttonModel: ButtonModel): CalculateState? {
             }
         }
         else -> {
-            val isPoint = buttonModel.text=="."
-            fun pointCheck(calculateUnit: CalculateUnit) = calculateUnit.text.contains('.') && buttonModel.text=="."
+            if (isConfirm) {
+                list.clear()
+                list.add(CalculateUnit("0"))
+            }
+            val isPoint = buttonModel.text == "."
+            fun pointCheck(calculateUnit: CalculateUnit) =
+                calculateUnit.text.contains('.') && buttonModel.text == "."
             if (editing) {
                 val index = editIndex
                 val sourceIsZero = list[index].text == "0"
                 if (buttonModel.text == "0" && sourceIsZero) {
                     return null
                 }
-                if (pointCheck(list[index])){
+                if (pointCheck(list[index])) {
                     return null
                 }
                 list[index] =
-                    list[index].copy(text = if (sourceIsZero  && !isPoint) buttonModel.text else list[index].text + buttonModel.text)
+                    list[index].copy(text = if (sourceIsZero && !isPoint) buttonModel.text else list[index].text + buttonModel.text)
                 return calculate()
             }
             if (list.isEmpty()) {
@@ -95,7 +129,7 @@ fun CalculateState.onInput(buttonModel: ButtonModel): CalculateState? {
             if (isLastOperator) {
                 list.add(CalculateUnit.from(buttonModel.text))
             } else {
-                if (pointCheck(list.last())){
+                if (pointCheck(list.last())) {
                     return null
                 }
                 list[list.lastIndex] = list.last()

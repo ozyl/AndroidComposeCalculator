@@ -5,6 +5,14 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import java.text.NumberFormat
+import java.util.*
+
+val String.prettyNumber:String get() = let {
+    val tmp = this.split(".")
+    val intvalue = tmp[0].toBigDecimalOrNull() ?: return this
+    return NumberFormat.getNumberInstance(Locale.US).format(intvalue) + (tmp.getOrNull(1)?.let { ".$it" }?:"")
+}
 
 /**
  * Quick use vibration
