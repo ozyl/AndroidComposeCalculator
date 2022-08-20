@@ -2,46 +2,67 @@ package cn.okzyl.studyjamscompose.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.darkColors
-import androidx.compose.material.lightColors
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.Color
 
-private val DarkColorPalette = darkColors(
-    primary = Purple200,
-    primaryVariant = Purple700,
-    secondary = Teal200
-)
+@Stable
+class CalculateTheme(
+    background:Color,
+    fontColor:Color,
+    complete:Color,
+    unconfirmedFontColor:Color,
+    primary:Color,
+){
+    var background by mutableStateOf(background, structuralEqualityPolicy())
+        internal set
+    var fontColor by mutableStateOf(fontColor, structuralEqualityPolicy())
+        internal set
+    var complete by mutableStateOf(complete, structuralEqualityPolicy())
+        internal set
+    var unconfirmedFontColor by mutableStateOf(unconfirmedFontColor, structuralEqualityPolicy())
+        internal set
+    var primary by mutableStateOf(primary, structuralEqualityPolicy())
+        internal set
+}
+private val DarkColorPalette = CalculateTheme(
+    background = Color.Black,
+    fontColor = Color.White,
+    complete = Color.Blue,
+    unconfirmedFontColor = Color.Gray.copy(alpha = 0.6f),
+    primary = Color(0xFFFF6B3B))
 
-private val LightColorPalette = lightColors(
-    primary = Purple500,
-    primaryVariant = Purple700,
-    secondary = Teal200
 
-    /* Other default colors to override
+private val LightColorPalette = CalculateTheme(
     background = Color.White,
-    surface = Color.White,
-    onPrimary = Color.White,
-    onSecondary = Color.Black,
-    onBackground = Color.Black,
-    onSurface = Color.Black,
-    */
+    fontColor = Color.Black,
+    complete = Color.Blue,
+    unconfirmedFontColor = Color.Gray.copy(alpha = 0.6f),
+    primary = Color(0xFFFF6B3B)
 )
 
+val LocalAppColors = compositionLocalOf {
+    LightColorPalette
+}
+
+var isDark by mutableStateOf<Boolean?>(null)
 @Composable
 fun StudyJamsComposeTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colors = if (darkTheme) {
+    if (isDark==null){
+        isDark = isSystemInDarkTheme()
+    }
+    val colors = if (isDark?:false) {
         DarkColorPalette
     } else {
         LightColorPalette
     }
-
-    MaterialTheme(
-        colors = colors,
-        typography = Typography,
-        shapes = Shapes,
-        content = content
-    )
+    CompositionLocalProvider(LocalAppColors provides colors) {
+        MaterialTheme(
+            typography = Typography,
+            shapes = Shapes,
+            content = content
+        )
+    }
 }

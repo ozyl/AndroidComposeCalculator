@@ -94,7 +94,7 @@ object Calculate {
                     '-' -> res = b-a
                     '/' -> {
                         if (a == BigDecimal.ZERO) throw Exception()
-                        res = b / a
+                        res = b.divide(a,20,BigDecimal.ROUND_CEILING)
                     }
                     '*' -> res = b * a
                 }

@@ -48,11 +48,11 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window?.run {
-            statusBarColor = Background.toArgb()
-        }
         setContent {
             StudyJamsComposeTheme {
+                window?.run {
+                    statusBarColor = LocalAppColors.current.background.toArgb()
+                }
                 // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -87,7 +87,7 @@ fun Calculator(calculateState: MutableState<CalculateState>) {
 
     Column(
         Modifier
-            .background(Background)
+            .background(LocalAppColors.current.background)
             .run {
                     padding(bottom = 30.dp)
             }, verticalArrangement = Arrangement.Bottom
@@ -142,7 +142,7 @@ fun CalculatorOrientation(calculateState: MutableState<CalculateState>) {
 
     Row(
         Modifier
-            .background(Background)
+            .background(LocalAppColors.current.background)
             .run {
                 padding(bottom = (10).dp)
             }, horizontalArrangement = Arrangement.End
@@ -201,7 +201,7 @@ private fun InputShow(calculateState: CalculateState, update: (CalculateState) -
             ) {
                 Text(
                     text = it.first.prettyNumber,
-                    color = UnconfirmedFontColor,
+                    color = LocalAppColors.current.unconfirmedFontColor,
                     fontSize = 20.sp,
                     modifier = Modifier.padding(bottom = 5.dp)
                 )
@@ -209,7 +209,7 @@ private fun InputShow(calculateState: CalculateState, update: (CalculateState) -
                 Row(Modifier.horizontalScroll(rememberScrollState())) {
                     Text(
                         text = "= " + it.second.prettyNumber,
-                        color = UnconfirmedFontColor,
+                        color = LocalAppColors.current.unconfirmedFontColor,
                         fontSize = 20.sp
                     )
                 }
@@ -223,12 +223,13 @@ private fun InputShow(calculateState: CalculateState, update: (CalculateState) -
                 targetValue = if (isConfirm) MIN_SIZE else MAX_SIZE,
                 animationSpec = tween(durationMillis = 100)
             )
+        val colors = LocalAppColors.current
         AutoSizeString(inputSizeAnimate.value, MIN_SIZE, { size ->
             calculateState.list.forEachIndexed { index, it ->
                 pushStringAnnotation(tag = index.toString(), annotation = it.text)
                 withStyle(
                     style = SpanStyle(
-                        color = if (isConfirm) UnconfirmedFontColor else FontColor,
+                        color = if (isConfirm) colors.unconfirmedFontColor else colors.fontColor,
                         fontSize = size.sp,
                         background = if (it.editing) selectColor else Color.Unspecified
                     )
@@ -269,7 +270,7 @@ private fun InputShow(calculateState: CalculateState, update: (CalculateState) -
             AutoSizeString(resultSizeAnimate.value, MIN_SIZE, { size ->
                 withStyle(
                     style = SpanStyle(
-                        color = if (isConfirm) FontColor else UnconfirmedFontColor,
+                        color = if (isConfirm) colors.fontColor else colors.unconfirmedFontColor,
                         fontSize = size.sp,
                     )
                 ) {
@@ -394,7 +395,7 @@ fun CalculatorButton(
                 .clip(CircleShape)
                 .background(
                     when (buttonModel.type) {
-                        ButtonType.CALCULATE -> (if (state.editing) Complete else Orange)
+                        ButtonType.CALCULATE -> (if (state.editing) LocalAppColors.current.complete else LocalAppColors.current.primary)
                         else -> Color.Unspecified
                     }
                 ),
@@ -419,7 +420,7 @@ fun CalculatorButton(
                 Text(
                     text = buttonModel.text,
                     fontSize = 30.sp,
-                    color = buttonModel.type.color.copy(alpha)
+                    color = buttonModel.type.getColor(LocalAppColors.current).copy(alpha=alpha),
                 )
             }
         }

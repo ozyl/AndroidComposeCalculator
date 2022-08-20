@@ -1,6 +1,6 @@
 package cn.okzyl.studyjamscompose
 
-import androidx.compose.runtime.mutableStateListOf
+import cn.okzyl.studyjamscompose.ui.theme.isDark
 import java.math.BigDecimal
 
 fun CalculateState.onInput(buttonModel: ButtonModel): CalculateState? {
@@ -101,6 +101,10 @@ fun CalculateState.onInput(buttonModel: ButtonModel): CalculateState? {
                     )
                 }
             }
+        }
+        ButtonType.CHANGE ->{
+            isDark = !(isDark?:false)
+            return null
         }
         else -> {
             if (isConfirm) {

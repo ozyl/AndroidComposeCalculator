@@ -2,11 +2,10 @@ package cn.okzyl.studyjamscompose
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.ui.graphics.Color
-import cn.okzyl.studyjamscompose.ui.theme.Orange
+import cn.okzyl.studyjamscompose.ui.theme.CalculateTheme
 
-val operAllow = mutableListOf(ButtonType.SYMBOL,ButtonType.CALCULATE)
-val allow = mutableListOf(ButtonType.NUMBER,ButtonType.DELETE,ButtonType.PERCENT,ButtonType.CALCULATE)
+val operAllow = mutableListOf(ButtonType.SYMBOL,ButtonType.CALCULATE,ButtonType.CHANGE)
+val allow = mutableListOf(ButtonType.NUMBER,ButtonType.DELETE,ButtonType.PERCENT,ButtonType.CALCULATE,ButtonType.CHANGE)
 val buttons = mutableStateListOf(
     mutableStateListOf(
         ButtonModel("AC", type = ButtonType.EMPTY),
@@ -49,11 +48,18 @@ data class ButtonModel(
     val res: Int? = null,
 )
 
-enum class ButtonType(val color: Color) {
-    NUMBER(Color.Black), SYMBOL(Orange), CALCULATE(Color.White), DELETE(Orange),
-    PERCENT(Orange), EMPTY(Orange), CHANGE(Orange)
+enum class ButtonType {
+    NUMBER, SYMBOL, CALCULATE, DELETE,
+    PERCENT, EMPTY, CHANGE;
+    
 }
 
+fun ButtonType.getColor(colors:CalculateTheme)=
+    when(this){
+        ButtonType.NUMBER -> colors.fontColor
+        ButtonType.CALCULATE -> colors.background
+        else -> colors.primary
+    }
 data class CalculateState(
     val list: SnapshotStateList<CalculateUnit> = mutableStateListOf<CalculateUnit>(CalculateUnit.from("0")),
     val result: Pair<Boolean,String>?=null,
