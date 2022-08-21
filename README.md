@@ -21,14 +21,10 @@
 
 4.长按删除、历史记录、数字格式化(逗号分隔)；
 
-### 录屏：
+### Show：
 
-<video id="video" controls="" preload="none" poster="封面" height="500" >
-      <source id="mp4" src="https://github.com/ozyl/StudyJamsCompose/blob/master/demo.mp4?raw=true" type="video/mp4">
-</video>
+[录屏](https://raw.githubusercontent.com/ozyl/AndroidComposeCalculator/master/demo.mp4)
 
-### Demo:
-
-[Click Download](https://github.com/ozyl/StudyJamsCompose/blob/master/app-debug-demo.apk?raw=true)
+[下载apk](https://raw.githubusercontent.com/ozyl/AndroidComposeCalculator/master/app-debug-demo.apk)
 
 
