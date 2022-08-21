@@ -71,6 +71,7 @@ class MainActivity : ComponentActivity() {
                     })  {
                         mutableStateOf(CalculateState())
                     }
+                    ViewCompat.getWindowInsetsController(LocalView.current)?.isAppearanceLightStatusBars = !(isDark?:false)
                     val isOrientation = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
                     if (isOrientation) CalculatorOrientation(calculateState) else
                     Calculator(calculateState)
@@ -83,7 +84,6 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun Calculator(calculateState: MutableState<CalculateState>) {
-    ViewCompat.getWindowInsetsController(LocalView.current)?.isAppearanceLightStatusBars = true
 
     Column(
         Modifier
@@ -137,8 +137,6 @@ fun Calculator(calculateState: MutableState<CalculateState>) {
 
 @Composable
 fun CalculatorOrientation(calculateState: MutableState<CalculateState>) {
-
-    ViewCompat.getWindowInsetsController(LocalView.current)?.isAppearanceLightStatusBars = true
 
     Row(
         Modifier
