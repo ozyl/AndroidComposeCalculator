@@ -28,3 +28,9 @@
 [下载apk](https://raw.githubusercontent.com/ozyl/AndroidComposeCalculator/master/app-debug-demo.apk)
 
 
+截图
+
+| ![](https://raw.githubusercontent.com/ozyl/AndroidComposeCalculator/master/pics/1.jpg) | ![](https://raw.githubusercontent.com/ozyl/AndroidComposeCalculator/master/pics/2.jpg) |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| ![](https://raw.githubusercontent.com/ozyl/AndroidComposeCalculator/master/pics/3.jpg) | ![](https://raw.githubusercontent.com/ozyl/AndroidComposeCalculator/master/pics/4.jpg) |
+
