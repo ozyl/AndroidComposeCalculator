@@ -25,7 +25,7 @@
 
 <video id="video" controls="" preload="none" poster="封面" height="500" >
       <source id="mp4" src="https://github.com/ozyl/StudyJamsCompose/blob/master/demo.mp4?raw=true" type="video/mp4">
-</videos>
+</video>
 ### Demo:
 
 [Click Download](https://github.com/ozyl/StudyJamsCompose/blob/master/app-debug-demo.apk?raw=true)
